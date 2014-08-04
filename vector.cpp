@@ -20,6 +20,20 @@ Vector substractVectors(Vector a, Vector b)
 	return c;
 }
 
+Vector multiplyVector(Vector v, GLfloat a)
+{
+	Vector r; 
+	r.x = v.x * a;
+	r.y = v.y * a;
+	r.z = v.z * a;
+	return r;
+}
+
+GLfloat module(Vector a)
+{
+	return sqrt(a.x*a.x + a.y*a.y + a.z*a.z);
+}
+
 void normalizeVector(Vector &a)
 {
 	GLfloat module = sqrt(a.x*a.x + a.y*a.y + a.z*a.z);

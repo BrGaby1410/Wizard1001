@@ -1,6 +1,6 @@
 build:
-	g++ main.cpp vector.cpp -g -lGL -lGLU -lglut -o wizzard202 -Wall
+	g++ main.cpp vector.cpp -g -lGL -lGLU -lglut -o Wizard1001 -Wall
 run:
-	./wizzard202
+	./Wizard1001
 clear:
-	rm wizzard202
+	rm Wizard1001

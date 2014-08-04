@@ -1,5 +1,6 @@
-#include <iostream>                // comentariu
+#include <iostream>
 #include <GL/glut.h>
+#include <GL/freeglut_ext.h>
 #include <math.h>
 #include "vector.h"
 
@@ -15,43 +16,111 @@ Vector target;
 Vector dir;
 Vector player;
 
+Vector res = createVector(0, 0, 0);
+Vector jumpForce = createVector(0, 0, 0);
+
 GLfloat angleY_player = 0;
-GLfloat angleX_player = 0;
+GLfloat globalAngleX = 0;
+GLfloat globalAngleY = 0;
+GLfloat angle = 0;
+
+GLfloat DRAG_FORCE = 0.5;
+GLfloat EYE_HEIGHT = 51.5;
+
+GLfloat SPEED = 0.25;
+
+bool right_button_state = 0;
+bool left_button_state = 0;
+short int button_order = 0;  // 0 - NOTHING; 1 - LEFT, RIGHT; 2 - RIGHT, LEFT; 3 - LEFT; 4 - RIGHT;
+
+bool keyState[256] = {false};
+
 
 typedef struct _cube
 {
     int x, y, z;
 } cube;
 
-cube ****world;
-bool visited[100][100][100];
-
 void draw_player()
 {
 	glColor3f(0, 0, 1);
-	// glPushMatrix();
-	// 	glTranslatef(player.x, player.y - 1, player.z + 0.5)
 	glPushMatrix();
-		glTranslatef(player.x, player.y + 0.5, player.z);
+		glTranslatef(player.x, player.y + 0.75 , player.z);
 		glRotatef(270, 1, 0, 0);
-		glutSolidCone(0.75, 1, 100, 101);
+		glutSolidCone(0.75, 0.5, 100, 101);
+	glPopMatrix();
+		glPushMatrix();
+		glTranslatef(player.x, player.y + 0.5, player.z);
+		glutSolidSphere(0.5, 100, 100);
+	glPopMatrix();
+	// glPushMatrix();
+	// 	glTranslatef(player.x + sin(angleY_player * DEG_TO_RAD)*0.5, player.y - 1, player.z + cos(angleY_player * DEG_TO_RAD)*0.5);
+	// 	glRotatef(angleY_player, 0, 1, 0);
+	// 	glutSolidCone(0.25, 0.5, 100, 101);
+	// glPopMatrix();
+	glPushMatrix();
+		glTranslatef(player.x, player.y - 0.6, player.z);
+		glRotatef(angleY_player, 0, 1, 0);
+		glutSolidCube(1.2);
 	glPopMatrix();
 	glPushMatrix();
-		glTranslatef(player.x + sin(angleY_player * DEG_TO_RAD)*0.5, player.y - 1, player.z + cos(angleY_player * DEG_TO_RAD)*0.5);
+		glTranslatef(player.x, player.y - 1.4, player.z);
 		glRotatef(angleY_player, 0, 1, 0);
-		glutSolidCone(0.25, 0.5, 100, 101);
+		glutSolidCube(1.2);
+	glPopMatrix();
+	glColor3f(1, 0, 0);
+	float aux = 0.3;
+	for (int i = 1; i <= 10; i++)
+	{
+		glPushMatrix();
+			glTranslatef(player.x - cos(angleY_player * DEG_TO_RAD)*0.7, 
+						player.y - aux, 
+						player.z + sin(angleY_player * DEG_TO_RAD)*0.7);
+			glRotatef(angleY_player, 0, 1, 0);
+			glutSolidCube(0.2);
+		glPopMatrix();
+		glPushMatrix();
+			glTranslatef(player.x + cos(angleY_player * DEG_TO_RAD)*0.7, 
+						player.y - aux, 
+						player.z - sin(angleY_player * DEG_TO_RAD)*0.7);
+			glRotatef(angleY_player, 0, 1, 0);
+			glutSolidCube(0.2);
+		glPopMatrix();
+		aux += 0.2;
+	}
+	aux = 2.2;
+	for (int i=1; i<= 5; i++)
+	{
+		glPushMatrix();
+			glTranslatef(player.x - cos(angleY_player * DEG_TO_RAD)*0.3, 
+						player.y - aux, 
+						player.z + sin(angleY_player * DEG_TO_RAD)*0.3);
+			glRotatef(angleY_player, 0, 1, 0);
+			glutSolidCube(0.4);
+		glPopMatrix();
+		glPushMatrix();
+			glTranslatef(player.x + cos(angleY_player * DEG_TO_RAD)*0.3, 
+						player.y - aux, 
+						player.z - sin(angleY_player * DEG_TO_RAD)*0.3);
+			glRotatef(angleY_player, 0, 1, 0);
+			glutSolidCube(0.4);
+		glPopMatrix();
+		aux += 0.4;
+	}
+	glColor3f(0, 0, 1);
+	glPushMatrix();
+		glTranslatef(player.x - cos(angleY_player * DEG_TO_RAD)*0.3 - sin(angleY_player * DEG_TO_RAD)*0.4, 
+					player.y - 3.8, 
+					player.z + sin(angleY_player * DEG_TO_RAD)*0.3 - cos(angleY_player * DEG_TO_RAD)*0.4);
+		glRotatef(angleY_player, 0, 1, 0);
+		glutSolidCube(0.4);
 	glPopMatrix();
 	glPushMatrix();
-
-		glTranslatef(player.x, player.y, player.z);
+		glTranslatef(player.x + cos(angleY_player * DEG_TO_RAD)*0.3 - sin(angleY_player * DEG_TO_RAD)*0.4, 
+					player.y - 3.8, 
+					player.z - sin(angleY_player * DEG_TO_RAD)*0.3 - cos(angleY_player * DEG_TO_RAD)*0.4);
 		glRotatef(angleY_player, 0, 1, 0);
-		glutSolidCube(1);
-	glPopMatrix();
-	glPushMatrix();
-		
-		glTranslatef(player.x, player.y - 1, player.z);
-		glRotatef(angleY_player, 0, 1, 0);
-		glutSolidCube(1);
+		glutSolidCube(0.4);
 	glPopMatrix();
 	if (angleY_player >= 360 || angleY_player <= -360) angleY_player = 0;
 //	cout << angleY_player << "\n";
@@ -62,17 +131,16 @@ void draw_temp_world()
 {
 	glBegin(GL_QUADS);
 		glNormal3f(0, 1, 0);
-		glVertex3f(0, 1, 0);
-		glVertex3f(0, 1, 100);
-		glVertex3f(100, 1, 100);
-		glVertex3f(100, 1, 0);
+		glVertex3f(0, 0, 0);
+		glVertex3f(0, 0, 100);
+		glVertex3f(100, 0, 100);
+		glVertex3f(100, 0, 0);
 	glEnd();
 	glColor3f(0, 1, 0);
 	glBegin(GL_QUADS);
-		glNormal3f(0, 0, 1);
 		glNormal3f(0, 0, -1);
-		glVertex3f(0, 1, 30);
-		glVertex3f(50, 1, 30);
+		glVertex3f(0, 0, 30);
+		glVertex3f(50, 0, 30);
 		glVertex3f(50, 2.5, 30);
 		glVertex3f(0, 2.5, 30);
 	glEnd();
@@ -103,53 +171,6 @@ void draw_cube(GLfloat x, GLfloat y, GLfloat z)
         glutSolidCube(1);
     glPopMatrix();
 }
-
-// void draw_world(int x, int y, int z)
-// {
-//     if (x >= 100 || x < 0 ||
-//         y >= 100 || y < 0 ||
-//         z >= 100 || z < 0)
-//         return;
-
-//     if (visited[x][y][z])
-//         return;
-
-//     visited[x][y][z] = true;
-
-//     if (world[x][y][z] != 0) {
-//         draw_cube(*world[x][y][z]);
-//         return;
-//     }
-
-//     draw_world(x - 1, y - 1, z - 1);
-//     draw_world(x - 1, y - 1, z);
-//     draw_world(x - 1, y - 1, z + 1);
-//     draw_world(x, y - 1, z - 1);
-//     draw_world(x, y - 1, z);
-//     draw_world(x, y - 1, z + 1);
-//     draw_world(x + 1, y - 1, z - 1);
-//     draw_world(x + 1, y - 1, z);
-//     draw_world(x + 1, y - 1, z + 1);
-
-//     draw_world(x - 1, y + 1, z - 1);
-//     draw_world(x - 1, y + 1, z);
-//     draw_world(x - 1, y + 1, z + 1);
-//     draw_world(x, y + 1, z - 1);
-//     draw_world(x, y + 1, z);
-//     draw_world(x, y + 1, z + 1);
-//     draw_world(x + 1, y + 1, z - 1);
-//     draw_world(x + 1, y + 1, z);
-//     draw_world(x + 1, y + 1, z + 1);
-
-//     draw_world(x - 1, y, z - 1);
-//     draw_world(x - 1, y, z);
-//     draw_world(x - 1, y, z + 1);
-//     draw_world(x, y, z - 1);
-//     draw_world(x, y, z + 1);
-//     draw_world(x + 1, y, z - 1);
-//     draw_world(x + 1, y, z);
-//     draw_world(x + 1, y, z + 1);
-// }
 
 void display(void)
 {
@@ -206,113 +227,273 @@ void reshape(int _width, int _height)
     height = _height;
 }
 
+void move()
+{
+	res = createVector(0, 0, 0);
+
+	if (button_order == 2)
+		{	
+			dir = substractVectors(target, eye);
+			dir.y = 0;
+			normalizeVector(dir);
+			dir = multiplyVector(dir, SPEED);
+			res = addVectors(res, dir);
+		}
+
+	if (keyState['w'] == true) {
+		dir = substractVectors(target, eye);
+		dir.y = 0;
+		normalizeVector(dir);
+		dir = multiplyVector(dir, SPEED);
+		res = addVectors(res, dir);
+	}
+
+	if (keyState['s'] == true) {
+		dir = substractVectors(target, eye);
+		dir.y = 0;
+		normalizeVector(dir);
+		dir = multiplyVector(dir, SPEED);
+		res = substractVectors(res, dir);
+	}
+
+	if (keyState['a'] == true) {
+		angleY_player++;
+		eye.x = player.x + sin(angleY_player * DEG_TO_RAD)*4.33;
+		eye.z = player.z + cos(angleY_player * DEG_TO_RAD)*4.33;
+		target.x = player.x - sin(angleY_player * DEG_TO_RAD)*16;
+		target.z = player.z - cos(angleY_player * DEG_TO_RAD)*16;
+			
+		// dir = substractVectors(target, eye);
+		// dir.y = 0;
+		// normalizeVector(dir);
+		// dir = multiplyVector(dir, SPEED);
+		// dir = rotateVector(dir, 90, 0, 1, 0);
+		// res = addVectors(res, dir);
+	}
+
+	if (keyState['d'] == true) {
+		angleY_player--;
+		eye.x = player.x + sin(angleY_player * DEG_TO_RAD)*4.33;
+		eye.z = player.z + cos(angleY_player * DEG_TO_RAD)*4.33;
+		target.x = player.x - sin(angleY_player * DEG_TO_RAD)*16;
+		target.z = player.z - cos(angleY_player * DEG_TO_RAD)*16;
+
+		// dir = substractVectors(target, eye);
+		// dir.y = 0;
+		// normalizeVector(dir);
+		// dir = multiplyVector(dir, SPEED);
+		// dir = rotateVector(dir, -90, 0, 1, 0);
+		// res = addVectors(res, dir);
+	}
+
+	// if (keyState[32] == true && jumpForce.y == 0)
+	// {
+	// 	jumpForce = createVector(0, 0.5, 0);                   // 0.171
+	// }
+	// // if (res.x != 0 && res.y != 0 && res.z != 0) {
+	// // 	// Vector dragForce = rotateVector(res, 180, 0, 1, 0);
+	// // 	// dragForce = multiplyVector(dragForce, 0.5);
+
+	// // 	// res = addVectors(res, dragForce);
+	// // }
+
+
+	// if (eye.y > EYE_HEIGHT) {
+	// 	jumpForce = substractVectors(jumpForce, createVector(0, 0.07, 0));           // 0.011
+	// } else if (jumpForce.y != 0.5) {                   // 0.171
+	// 	keyState[32] = false;
+	// 	res.y = 0;
+	// 	jumpForce = createVector(0, 0, 0);
+	// 	eye.y = EYE_HEIGHT;
+	// }
+
+	res = multiplyVector(res, 0.9);
+// 	if (jumpForce.y != 0)
+// 		res = addVectors(res, jumpForce);
+// 	else if (res.x != 0 || res.y != 0 || res.z != 0) {
+// 		// res = addVectors(res, createVector(0, 0.5 * sin(angle * DEG_TO_RAD), 0));
+// 	}
+// //	cout << res.x << " " << res.y << " " << res.z << "\n";
+// 	cout << eye.x << " " << eye.y << " " << eye.z << "\n";
+// 	cout << jumpForce.y << "\n\n";
+
+	eye = addVectors(eye, res);
+	target = addVectors(target, res);
+	player = addVectors(player, res);
+}
+
 void keyboard(unsigned char key, int x, int y)
 {
-	cout << eye.x << " " << eye.y << " " << eye.z << "\n";
 	switch (key)
 	{
 		case 'w':
 		case 'W':
-			dir = substractVectors(target, eye);
-			normalizeVector(dir);
-			eye = addVectors(eye, dir);
-			target = addVectors(target, dir);
-			player = addVectors(player, dir);
-//			glTranslatef(player.x + sin(angleY_player * DEG_TO_RAD)*0.5, player.y - 1, player.z + cos(angleY_player * DEG_TO_RAD));
-
-//			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			keyState['w'] = true;
 			break;
 		case 's':
 		case 'S':
-			dir = substractVectors(target, eye);
-			normalizeVector(dir);
-			eye = substractVectors(eye, dir);
-			target = substractVectors(target, dir);
-			player = substractVectors(player, dir);
+			keyState['s'] = true;
 			break; 
 		case 'a':
 		case 'A':
-			// dir = substractVectors(target, eye);
-			// normalizeVector(dir);
-			// dir = rotateVector(dir, 90, 0, 1, 0);
-			// eye = addVectors(eye, dir);
-			// target = addVectors(target, dir);
-			// player = addVectors(player, dir);
-			angleY_player++;
-			eye.x = player.x + sin(angleY_player * DEG_TO_RAD)*7.5;
-			eye.z = player.z + cos(angleY_player * DEG_TO_RAD)*7.5;
-			target.x = player.x - sin(angleY_player * DEG_TO_RAD)*13;
-			target.z = player.z - cos(angleY_player * DEG_TO_RAD)*13;
-			
+			keyState['a'] = true;
 			break;
 		case 'd':
 		case 'D':
-			// dir = substractVectors(target, eye);
-			// normalizeVector(dir);
-			// dir = rotateVector(dir, -90, 0, 1, 0);
-			// eye = addVectors(eye, dir);
-			angleY_player--;
-			eye.x = player.x + sin(angleY_player * DEG_TO_RAD)*7.5;
-			eye.z = player.z + cos(angleY_player * DEG_TO_RAD)*7.5;
-			target.x = player.x - sin(angleY_player * DEG_TO_RAD)*13;
-			target.z = player.z - cos(angleY_player * DEG_TO_RAD)*13;
-			
-			// target = addVectors(target, dir);
-			// player = addVectors(player, dir);
+			keyState['d'] = true;
+			break;
+		case 32:
+			keyState[32] = true;
+			break;
+		case 27:
+			exit(0);
+	}
+}
+
+void specialKeyboard(int key, int x, int y)
+{
+	switch (key)
+	{
+		case 27:
+			exit(0);
+	}
+}
+
+void keyboardUp(unsigned char key, int x, int y)
+{
+	switch (key)
+	{
+		case 'w':
+		case 'W':
+			keyState['w'] = false;
+			break;
+		case 's':
+		case 'S':
+			keyState['s'] = false;
+			break; 
+		case 'a':
+		case 'A':
+			keyState['a'] = false;
+			break;
+		case 'd':
+		case 'D':
+			keyState['d'] = false;
 			break;
 	}
 }
 
-void motion(int x, int y)
+void motion_passive(int x, int y)
 {
-	GLfloat angleX;
-	GLfloat angleY;
-	// cout << x << " " << y << "\n";
-
-	angleY = 90 - (x * (180 / (GLfloat) width));
-	angleX = 90 - (y * (180 / (GLfloat) height));
-
-	// dir = substractVectors(target, eye);
-	// dir = rotateVector(dir, angleY, 0, 1, 0);
-	// target = addVectors(eye, dir);
-
-	// dir = substractVectors(player, eye);
-	// dir = rotateVector(dir, angleY, 0, 1, 0);
-	// player = addVectors(eye, dir);
-	angleY_player += angleY;
-	eye.x = player.x + sin(angleY_player * DEG_TO_RAD)*7.5;
-	eye.z = player.z + cos(angleY_player * DEG_TO_RAD)*7.5;
-	target.x = player.x - sin(angleY_player * DEG_TO_RAD)*13;
-	target.z = player.z - cos(angleY_player * DEG_TO_RAD)*13;
-	// dir = substractVectors(target, eye);
-	// dir = rotateVector(dir, angleX, 1, 0, 0);
-	// target = addVectors(eye, dir);
-	// angleX_player += angleX;
-	// target.y = player.y 
-
-	if (x != width / 2 || y != height / 2) 
-		glutWarpPointer(width / 2, height / 2);
-	glutPostRedisplay();
+//	if (x > width - 50 && y > height - 50) cout << "Here should be a picture\n"; 
 }
 
- // int auxs = 0;
- // int auxm = 0;
- // int auxh = 0;
- // int aux = -1;
+void motion(int x, int y)
+{
+		GLfloat angleX;
+		GLfloat angleY;
+		// cout << x << " " << y << "\n";
+
+		// if (x != width / 2 || y != height / 2) 
+		// 			glutWarpPointer(width / 2, height / 2);
+
+		angleY = 90 - (x * (180 / (GLfloat) width));
+		angleX = 90 - (y * (180 / (GLfloat) height));
+
+		// dir = substractVectors(target, eye);
+		// dir = rotateVector(dir, angleY, 0, 1, 0);
+		// target = addVectors(eye, dir);	
+
+		// dir = substractVectors(player, eye);
+		// dir = rotateVector(dir, angleY, 0, 1, 0);
+		// player = addVectors(eye, dir);
+
+		globalAngleY += angleY;
+		if (globalAngleY >= 360 || globalAngleY <= -360) globalAngleY = 0;
+
+		if (angleX + globalAngleX > 35)
+		{
+			angleX = 35 - globalAngleX;
+			globalAngleX = 35;
+		}
+		else if (angleX + globalAngleX < -67)
+		{
+			angleX = -67 - globalAngleX;
+			globalAngleX = -67;
+		}
+		else globalAngleX += angleX;	
+
+		if (button_order == 4 || button_order == 2) angleY_player += angleY;
+
+		
+		if (button_order == 1)
+		{
+			
+			eye.x = player.x + sin(globalAngleY * DEG_TO_RAD)*4.33;
+			eye.y = player.y + sin(globalAngleX * DEG_TO_RAD)*4.33;
+			eye.z = player.z + cos(globalAngleY * DEG_TO_RAD)*4.33;
+			target.x = player.x - sin(globalAngleY * DEG_TO_RAD)*16;
+			target.y = player.y - sin(globalAngleX * DEG_TO_RAD)*16;
+			target.z = player.z - cos(globalAngleY * DEG_TO_RAD)*16;
+		} else if (button_order == 2)
+				{
+					eye.x = player.x + sin(angleY_player * DEG_TO_RAD)*4.33;
+					eye.y = player.y + sin(globalAngleX * DEG_TO_RAD)*4.33;
+					eye.z = player.z + cos(angleY_player * DEG_TO_RAD)*4.33;
+					target.x = player.x - sin(angleY_player * DEG_TO_RAD)*16;
+					target.y = player.y - sin(globalAngleX * DEG_TO_RAD)*16;
+					target.z = player.z - cos(angleY_player * DEG_TO_RAD)*16; 
+				} else {
+							eye.x = player.x + sin(globalAngleY * DEG_TO_RAD)*4.33;
+			eye.y = player.y + sin(globalAngleX * DEG_TO_RAD)*4.33;
+			eye.z = player.z + cos(globalAngleY * DEG_TO_RAD)*4.33;
+			target.x = player.x - sin(globalAngleY * DEG_TO_RAD)*16;
+			target.y = player.y - sin(globalAngleX * DEG_TO_RAD)*16;
+			target.z = player.z - cos(globalAngleY * DEG_TO_RAD)*16;
+						}
+		if (x != width / 2 || y != height / 2) 
+			glutWarpPointer(width / 2, height / 2);
+		cout << globalAngleX << "\n";
+		glutPostRedisplay();
+
+}
+
+void mouse_wheel(int wheel, int direction, int x, int y)
+{
+	cout << "Se roteste...\n";
+}
+
+int numar = 0;
+void mouse(int button, int state, int x, int y)
+{
+	// if (button == 3) cout << "SUUUUS\n";
+	// if (button == 4) cout << "JOOOOS\n";                        // N, LR, RL, L, R
+	if (button == GLUT_RIGHT_BUTTON) 
+		{
+			if (state == GLUT_DOWN) {right_button_state = 1;
+			                         if (left_button_state) button_order = 1;
+			                     		else button_order = 4;}
+				else {right_button_state = 0;
+					  if (left_button_state) button_order = 3;
+			            else button_order = 0;}
+			cout << ++numar << "\n";
+			if (x != width / 2 || y != height / 2) 
+				glutWarpPointer(width / 2, height / 2);
+			
+		}
+	if (button == GLUT_LEFT_BUTTON) 
+	{
+		if (state == GLUT_DOWN) {left_button_state = 1;
+								 if (right_button_state) button_order = 2;
+			                     		else button_order = 3;}
+			else {left_button_state = 0;
+				  if (right_button_state) button_order = 4;
+			       	else button_order = 0;}
+	}
+}
 
 void tick(int val)
 {
-	// if (aux!=val) { aux = val; auxs = aux/100;
-	// 				if (auxs >= 60) { auxs = 0; auxm++; }
-	// 				if (auxm >= 60) { auxm = 0; auxh++; }
-	// 				cout << auxh << " : ";
-	// 				if (auxm<10) cout << "0" << auxm << " : ";
-	// 					else cout << auxm << " : ";
-	// 				if (auxs<10) cout << "0" << auxs << " : ";
-	// 					else cout << auxs << " : ";
-	// 				if (aux%100<10) cout << "0" << aux%100 << "\n";
-	// 					else cout << aux%100 << "\n";
-	// 			  }
+	move();
 	glutPostRedisplay();
 	glutTimerFunc(1, tick, val + 1);
 }
@@ -327,36 +508,11 @@ void initialize(void)
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
     glEnable(GL_COLOR_MATERIAL);
-    glColorMaterial(GL_FRONT, GL_AMBIENT);
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT);
 
-    eye = createVector (15, 5, 20.5);
-    target = createVector (15, 5, 0);
-    player = createVector (15, 2.5, 13);
-
-    // world = (cube****) calloc (100, sizeof (cube***));
-    // for (int i = 0; i < 100; i++)
-    // {
-    //     world[i] = (cube***) calloc (100, sizeof(cube**));
-    //     for (int j = 0; j < 100; j++)
-    //     {
-    //         world[i][j] = (cube**) calloc (100, sizeof (cube*));
-    //     }
-    // }
-
-    // for (int i = 0; i < 100; i++)
-    // {
-    //     for (int j = 0; j < 2; j++)
-    //     {
-    //         for (int k = 0; k < 100; k++)
-    //         {
-    //             visited[i][j][k] = false;
-    //             world[i][j][k] = (cube*) malloc (sizeof(cube));
-    //             (*world[i][j][k]).x = i;
-    //             (*world[i][j][k]).y = j;
-    //             (*world[i][j][k]).z = k;
-    //         }
-    //     }
-    // }
+    eye = createVector (15, 6.48, 19.55);
+    target = createVector (15, 6.48, 0);
+    player = createVector (15, 4, 16);
 }
 
 int main(int argc, char *argv[])
@@ -364,13 +520,17 @@ int main(int argc, char *argv[])
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(1200, 900);
-    glutCreateWindow("Wizard102");
+    glutCreateWindow("Wizard1001");
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
     glutTimerFunc(1, tick, 0);
     glutKeyboardFunc(keyboard);
+    glutSpecialFunc(specialKeyboard);
+    glutKeyboardUpFunc(keyboardUp);
+    glutMouseWheelFunc(mouse_wheel);
     glutMotionFunc(motion);
-	glutPassiveMotionFunc(motion);
+	glutPassiveMotionFunc(motion_passive);
+	glutMouseFunc(mouse);
     initialize();
     glutMainLoop();
     return 0;

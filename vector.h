@@ -11,3 +11,5 @@ Vector substractVectors(Vector a, Vector b);
 void normalizeVector(Vector &a);
 Vector addVectors(Vector a, Vector b);
 Vector rotateVector(Vector v, GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
+Vector multiplyVector(Vector v, GLfloat a);
+GLfloat module(Vector a);
