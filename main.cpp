@@ -15,23 +15,36 @@ Vector eye;
 Vector target;
 Vector dir;
 Vector player;
+Vector eye_init;
 
 Vector res = createVector(0, 0, 0);
 Vector jumpForce = createVector(0, 0, 0);
 
 GLfloat angleY_player = 0;
-GLfloat globalAngleX = 0;
-GLfloat globalAngleY = 0;
+GLfloat angleY_camera = 0;
+GLfloat angleX_camera = 35;
+GLfloat angleY_camera_init = 0;
+GLfloat angleX_camera_init = 25;
 GLfloat angle = 0;
+GLfloat angleX_camera_diff = 0;
+GLfloat angleY_camera_diff = 0;
+
+GLfloat dist_camera = 4.33;
+GLfloat diff_X = 0;
+GLfloat diff_Y = 0;
 
 GLfloat DRAG_FORCE = 0.5;
 GLfloat EYE_HEIGHT = 51.5;
 
 GLfloat SPEED = 0.25;
+bool stop_moving = 0;
 
 bool right_button_state = 0;
 bool left_button_state = 0;
 short int button_order = 0;  // 0 - NOTHING; 1 - LEFT, RIGHT; 2 - RIGHT, LEFT; 3 - LEFT; 4 - RIGHT;
+
+GLfloat angleY_camera_before = angleY_camera;
+GLfloat angleX_camera_before = angleX_camera;
 
 bool keyState[256] = {false};
 
@@ -49,7 +62,7 @@ void draw_player()
 		glRotatef(270, 1, 0, 0);
 		glutSolidCone(0.75, 0.5, 100, 101);
 	glPopMatrix();
-		glPushMatrix();
+	glPushMatrix();
 		glTranslatef(player.x, player.y + 0.5, player.z);
 		glutSolidSphere(0.5, 100, 100);
 	glPopMatrix();
@@ -183,22 +196,6 @@ void display(void)
 
     draw_cube(0,0,0);
     draw_cube(0.5,1.5,0.5);
-    // glPushMatrix();
-    //     glTranslatef(5,3,5);
-    //     glutSolidCube(1);
-    // glPopMatrix();
-    // glPushMatrix();
-    //     glTranslatef(5,2,5);
-    //     glutSolidCube(1);
-    // glPopMatrix();
-    // glPushMatrix();
-    //     glTranslatef(5,1,5);
-    //     glutSolidCube(1);
-    // glPopMatrix();
-    // glPushMatrix();
-    //     glTranslatef(5,2,6);
-    //     glutSolidCube(1);
-    // glPopMatrix();
     // Set the drawing color to white
     glColor3f(0, 1, 1);
 
@@ -227,13 +224,14 @@ void reshape(int _width, int _height)
     height = _height;
 }
 
+
 void move()
 {
 	res = createVector(0, 0, 0);
 
-	if (button_order == 2)
-		{	
-			dir = substractVectors(target, eye);
+	if (button_order == 1 || button_order == 2)
+		{
+			dir = substractVectors(target, player);
 			dir.y = 0;
 			normalizeVector(dir);
 			dir = multiplyVector(dir, SPEED);
@@ -241,15 +239,16 @@ void move()
 		}
 
 	if (keyState['w'] == true) {
-		dir = substractVectors(target, eye);
-		dir.y = 0;
-		normalizeVector(dir);
-		dir = multiplyVector(dir, SPEED);
-		res = addVectors(res, dir);
-	}
+			dir = substractVectors(target, player);
+			dir.y = 0;
+			normalizeVector(dir);
+			dir = multiplyVector(dir, SPEED);
+			res = addVectors(res, dir);
+			}
+	
 
 	if (keyState['s'] == true) {
-		dir = substractVectors(target, eye);
+		dir = substractVectors(target, player);
 		dir.y = 0;
 		normalizeVector(dir);
 		dir = multiplyVector(dir, SPEED);
@@ -257,33 +256,51 @@ void move()
 	}
 
 	if (keyState['a'] == true) {
-		angleY_player++;
-		eye.x = player.x + sin(angleY_player * DEG_TO_RAD)*4.33;
-		eye.z = player.z + cos(angleY_player * DEG_TO_RAD)*4.33;
+
+		cout << angleY_player << " " << angleY_camera << "\n";
+		angleY_player ++;
+		angleY_camera_init ++;
 		target.x = player.x - sin(angleY_player * DEG_TO_RAD)*16;
 		target.z = player.z - cos(angleY_player * DEG_TO_RAD)*16;
-			
-		// dir = substractVectors(target, eye);
-		// dir.y = 0;
-		// normalizeVector(dir);
-		// dir = multiplyVector(dir, SPEED);
-		// dir = rotateVector(dir, 90, 0, 1, 0);
-		// res = addVectors(res, dir);
+			//angleY_camera = angleY_player;
+		if (button_order == 0)
+		{
+		angleY_camera = angleY_player;
+		eye.x = player.x + sin(angleY_camera * DEG_TO_RAD)*dist_camera;
+		eye.z = player.z + cos(angleY_camera * DEG_TO_RAD)*dist_camera;
+		}
+
+		eye_init.x = player.x + sin(angleY_camera_init * DEG_TO_RAD) * dist_camera;
+		eye_init.y = player.y + sin(angleX_camera_init * DEG_TO_RAD) * dist_camera;
+		eye_init.z = player.z + cos(angleY_camera_init * DEG_TO_RAD) * dist_camera;
+
+    					
+    					
+		if (angleY_camera >= 360 || angleY_camera <= -360) angleY_camera = 0;
 	}
 
 	if (keyState['d'] == true) {
-		angleY_player--;
-		eye.x = player.x + sin(angleY_player * DEG_TO_RAD)*4.33;
-		eye.z = player.z + cos(angleY_player * DEG_TO_RAD)*4.33;
+		
+
+		cout << angleY_player << " " << angleY_camera << "\n";
+		angleY_player --;
 		target.x = player.x - sin(angleY_player * DEG_TO_RAD)*16;
 		target.z = player.z - cos(angleY_player * DEG_TO_RAD)*16;
+		if (button_order == 0)
+		{
+		angleY_camera = angleY_player;
+		eye.x = player.x + sin(angleY_camera * DEG_TO_RAD)*dist_camera;
+		eye.z = player.z + cos(angleY_camera * DEG_TO_RAD)*dist_camera;
+		}
 
-		// dir = substractVectors(target, eye);
-		// dir.y = 0;
-		// normalizeVector(dir);
-		// dir = multiplyVector(dir, SPEED);
-		// dir = rotateVector(dir, -90, 0, 1, 0);
-		// res = addVectors(res, dir);
+
+
+		if (angleY_camera >= 360 || angleY_camera <= -360) angleY_camera = 0;
+
+		angleY_camera_init --;
+		eye_init.x = player.x + sin(angleY_camera_init * DEG_TO_RAD) * dist_camera;
+		eye_init.y = player.y + sin(angleX_camera_init * DEG_TO_RAD) * dist_camera;
+		eye_init.z = player.z + cos(angleY_camera_init * DEG_TO_RAD) * dist_camera;
 	}
 
 	// if (keyState[32] == true && jumpForce.y == 0)
@@ -322,17 +339,26 @@ void move()
 	player = addVectors(player, res);
 }
 
+bool change = 0;
+
 void keyboard(unsigned char key, int x, int y)
 {
 	switch (key)
 	{
 		case 'w':
 		case 'W':
+			// if (stop_moving == 0)
+			// 	keyState['w'] = true;
+			// else keyState['w'] = false;
+			if (button_order == 1 || button_order == 2) button_order = 4;
 			keyState['w'] = true;
+			if (keyState['s'] == true && change == 0) keyState['s'] = false;
 			break;
 		case 's':
 		case 'S':
 			keyState['s'] = true;
+			if (keyState['w'] == true) {keyState['w'] = false; change = 1;}
+				else change = 0;
 			break; 
 		case 'a':
 		case 'A':
@@ -387,86 +413,90 @@ void motion_passive(int x, int y)
 //	if (x > width - 50 && y > height - 50) cout << "Here should be a picture\n"; 
 }
 
+
 void motion(int x, int y)
 {
 		GLfloat angleX;
 		GLfloat angleY;
+
+		angleX_camera_before = angleX_camera;
+		angleY_camera_before = angleY_camera;
 		// cout << x << " " << y << "\n";
 
 		// if (x != width / 2 || y != height / 2) 
 		// 			glutWarpPointer(width / 2, height / 2);
-
+		cout << angleY_player << " " << angleY_camera << "\n";
 		angleY = 90 - (x * (180 / (GLfloat) width));
 		angleX = 90 - (y * (180 / (GLfloat) height));
 
-		// dir = substractVectors(target, eye);
-		// dir = rotateVector(dir, angleY, 0, 1, 0);
-		// target = addVectors(eye, dir);	
+		angleX = -angleX;
 
-		// dir = substractVectors(player, eye);
-		// dir = rotateVector(dir, angleY, 0, 1, 0);
-		// player = addVectors(eye, dir);
-
-		globalAngleY += angleY;
-		if (globalAngleY >= 360 || globalAngleY <= -360) globalAngleY = 0;
-
-		if (angleX + globalAngleX > 35)
+		if (angleX + angleX_camera > 35)
 		{
-			angleX = 35 - globalAngleX;
-			globalAngleX = 35;
+			angleX = 35 - angleX_camera;
+			angleX_camera  = 35;
 		}
-		else if (angleX + globalAngleX < -67)
+		else if (angleX + angleX_camera < -67)
 		{
-			angleX = -67 - globalAngleX;
-			globalAngleX = -67;
+			angleX = -67 - angleX_camera;
+			angleX_camera = -67;
 		}
-		else globalAngleX += angleX;	
+		else angleX_camera += angleX;
 
-		if (button_order == 4 || button_order == 2) angleY_player += angleY;
+		angleY_camera += angleY;
+		if (angleY_camera >= 360 || angleY_camera <= -360) angleY_camera = 0;
 
+		if (button_order == 1 && (angleY_camera_before != angleY_camera || angleX_camera_before != angleX_camera))
+		{
+			button_order = 2;
+		}
+
+		if (button_order == 4 || button_order == 2) angleY_player = angleY_camera;
 		
-		if (button_order == 1)
+		eye.x = player.x + sin(angleY_camera * DEG_TO_RAD) * dist_camera;
+		eye.y = player.y + sin(angleX_camera * DEG_TO_RAD) * dist_camera;
+		eye.z = player.z + cos(angleY_camera * DEG_TO_RAD) * dist_camera;
+
+		if (button_order == 4 || button_order == 2)
 		{
-			
-			eye.x = player.x + sin(globalAngleY * DEG_TO_RAD)*4.33;
-			eye.y = player.y + sin(globalAngleX * DEG_TO_RAD)*4.33;
-			eye.z = player.z + cos(globalAngleY * DEG_TO_RAD)*4.33;
-			target.x = player.x - sin(globalAngleY * DEG_TO_RAD)*16;
-			target.y = player.y - sin(globalAngleX * DEG_TO_RAD)*16;
-			target.z = player.z - cos(globalAngleY * DEG_TO_RAD)*16;
-		} else if (button_order == 2)
-				{
-					eye.x = player.x + sin(angleY_player * DEG_TO_RAD)*4.33;
-					eye.y = player.y + sin(globalAngleX * DEG_TO_RAD)*4.33;
-					eye.z = player.z + cos(angleY_player * DEG_TO_RAD)*4.33;
-					target.x = player.x - sin(angleY_player * DEG_TO_RAD)*16;
-					target.y = player.y - sin(globalAngleX * DEG_TO_RAD)*16;
-					target.z = player.z - cos(angleY_player * DEG_TO_RAD)*16; 
-				} else {
-							eye.x = player.x + sin(globalAngleY * DEG_TO_RAD)*4.33;
-			eye.y = player.y + sin(globalAngleX * DEG_TO_RAD)*4.33;
-			eye.z = player.z + cos(globalAngleY * DEG_TO_RAD)*4.33;
-			target.x = player.x - sin(globalAngleY * DEG_TO_RAD)*16;
-			target.y = player.y - sin(globalAngleX * DEG_TO_RAD)*16;
-			target.z = player.z - cos(globalAngleY * DEG_TO_RAD)*16;
-						}
+			target.x = player.x - sin(angleY_player * DEG_TO_RAD) * 16;
+			target.y = player.y - sin(angleX_camera * DEG_TO_RAD) * 16;
+			target.z = player.z - cos(angleY_player * DEG_TO_RAD) * 16; 
+		}
+
 		if (x != width / 2 || y != height / 2) 
 			glutWarpPointer(width / 2, height / 2);
-		cout << globalAngleX << "\n";
+//		cout << globalAngleX << "\n";
 		glutPostRedisplay();
 
 }
 
 void mouse_wheel(int wheel, int direction, int x, int y)
 {
-	cout << "Se roteste...\n";
+	cout << "asdadasdadasd\n";
 }
 
-int numar = 0;
+
 void mouse(int button, int state, int x, int y)
 {
-	// if (button == 3) cout << "SUUUUS\n";
-	// if (button == 4) cout << "JOOOOS\n";                        // N, LR, RL, L, R
+	if (button == 3) // cout << "UUUUUUUP\n";
+		{if (dist_camera > 4.33 + 0.05) dist_camera -= 0.05;
+			else dist_camera = 4.33;
+		eye.x = player.x + sin(angleY_camera * DEG_TO_RAD) * dist_camera;
+		eye.y = player.y + sin(angleX_camera * DEG_TO_RAD) * dist_camera;
+		eye.z = player.z + cos(angleY_camera * DEG_TO_RAD) * dist_camera;
+		}
+
+	if (button == 4) // cout << "DOOOOOOOOWN\n";
+		{if (dist_camera < 8 - 0.05) dist_camera += 0.05;
+			else dist_camera = 8;
+		eye.x = player.x + sin(angleY_camera * DEG_TO_RAD) * dist_camera;
+		eye.y = player.y + sin(angleX_camera * DEG_TO_RAD) * dist_camera;
+		eye.z = player.z + cos(angleY_camera * DEG_TO_RAD) * dist_camera; }
+
+	if (x != width / 2 || y != height / 2) 
+			glutWarpPointer(width / 2, height / 2);                        // N, LR, RL, L, R
+
 	if (button == GLUT_RIGHT_BUTTON) 
 		{
 			if (state == GLUT_DOWN) {right_button_state = 1;
@@ -475,7 +505,6 @@ void mouse(int button, int state, int x, int y)
 				else {right_button_state = 0;
 					  if (left_button_state) button_order = 3;
 			            else button_order = 0;}
-			cout << ++numar << "\n";
 			if (x != width / 2 || y != height / 2) 
 				glutWarpPointer(width / 2, height / 2);
 			
@@ -491,9 +520,37 @@ void mouse(int button, int state, int x, int y)
 	}
 }
 
+void set_camera()
+{
+	angleX_camera_diff = 35 - angleX_camera;
+	angleY_camera_diff = 0 - angleY_camera;
+	if (diff_X != 0) diff_X --;
+	if (diff_Y != 0) diff_Y --;
+	eye.x = player.x + sin((angleY_camera_diff - diff_Y)*DEG_TO_RAD) * dist_camera;
+	eye.y = player.y + sin((angleX_camera_diff - diff_Y)*DEG_TO_RAD) * dist_camera;
+	eye.z = player.z + cos((angleY_camera_diff - diff_X)*DEG_TO_RAD) * dist_camera;
+}
+
 void tick(int val)
 {
 	move();
+	angleX_camera_diff = 35 - angleX_camera;
+	angleY_camera_diff = 0 - angleY_camera;
+	// if (button_order == 0 && keyState['a'] == false && keyState['d'] == false &&
+	// 	(eye.x != eye_init.x || eye.y != eye_init.y || eye.z != eye_init.z)     ) 
+	// 	set_camera();
+	// else {diff_X = angleX_camera_diff;
+	// 	  diff_Y = angleY_camera_diff;}
+
+	// if (button_order == 2) 
+	// {
+	// 	globalAngleX_left = globalAngleX_right;
+	// 	globalAngleY_left = globalAngleY_right;
+	// }
+	// if (button_order == 4)
+	// {
+
+	// }
 	glutPostRedisplay();
 	glutTimerFunc(1, tick, val + 1);
 }
@@ -510,9 +567,16 @@ void initialize(void)
     glEnable(GL_COLOR_MATERIAL);
     glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT);
 
-    eye = createVector (15, 6.48, 19.55);
-    target = createVector (15, 6.48, 0);
+    // eye = createVector (15, 6.48, 19.55);
+    target = createVector (15, 4, 0);
     player = createVector (15, 4, 16);
+    eye = createVector (player.x + sin(angleY_camera * DEG_TO_RAD) * dist_camera, 
+    					player.y + sin(angleX_camera * DEG_TO_RAD) * dist_camera,
+    					player.z + cos(angleY_camera * DEG_TO_RAD) * dist_camera);
+    eye_init.x = eye.x;
+    eye_init.y = eye.y;
+    eye_init.z = eye.z;
+
 }
 
 int main(int argc, char *argv[])
